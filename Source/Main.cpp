@@ -1,4 +1,8 @@
 #include "Main.h"
+//Created by Supercraft360
+//https://www.unknowncheats.me/forum/members/570068.html
+//https://github.com/maniacTM
+
 
 int main(void)
 {
@@ -12,17 +16,20 @@ int main(void)
 	//Open handle to CSGO
 	hProc = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION, false, hProcID);
 
-	//std::cout << hProc << std::endl;
+	//Wait for Client.DLL
 	while (GetModuleBaseAddress(hProcID, szStrings::szClientMod) == 0)
 		Sleep(100);
 
+	//Wait for Engine.DLL
 	while (GetModuleBaseAddress(hProcID, szStrings::szEngineMod) == 0)
 		Sleep(100);
 
+	//Set our client & engine module base locations.
 	mClient = GetModuleBaseAddress(hProcID, szStrings::szClientMod);
 	mEngine = GetModuleBaseAddress(hProcID, szStrings::szEngineMod);
+	dwClientStatePtr = read<uintptr_t>(mEngine + offsets::dwClientState);
 
-	while (FindProcessId(szStrings::szCSGO) != 0)
+	while (true)
 	{
 		runRCS();
 		Sleep(1);
@@ -31,31 +38,34 @@ int main(void)
 	return 0;
 }
 
-void runRCS()
+inline void runRCS()
 {
-	auto dwlocal = read<uintptr_t>(mClient + offsets::dwLocalPlayer);
-	auto dwClientState = read<uintptr_t>(mEngine + offsets::dwClientState);
-	auto dwPunch = read<Vector3>(dwlocal + offsets::m_aimPunchAngle);
-	auto dwViewAngles = read<Vector3>(dwClientState + offsets::dwClientState_ViewAngles);
+	//read client state to check we are in game and check playerstate to see if ur alive.
+	dwClientStatePtr = read<uintptr_t>(mEngine + offsets::dwClientState);
+	auto dwClientState_State = read<uintptr_t>(dwClientStatePtr + offsets::dwClientState_State);
 
-	auto totalPunch = dwPunch.x + dwPunch.y;
-	if (totalPunch != 0.f) //Check for recoil, if detected then run control system
+	if (dwClientState_State == 6)
 	{
-		Vector3 compensatedAngle;
+		auto dwlocal = read<uintptr_t>(mClient + offsets::dwLocalPlayer);
 
-		compensatedAngle.x = ((dwViewAngles.x + dwOldPunchAngle.x) - (dwPunch.x * 2.f));
-		compensatedAngle.y = ((dwViewAngles.y + dwOldPunchAngle.y) - (dwPunch.y * 2.f));
+		if (dwlocal != 0)
+		{
+			auto dwPunch = read<Vector3>(dwlocal + offsets::m_aimPunchAngle);
+			auto dwViewAngles = read<Vector3>(dwClientStatePtr + offsets::dwClientState_ViewAngles);
+			const float totalPunch = dwPunch.x + dwPunch.y;
 
-		auto AimAngle = ClampAngle(compensatedAngle);
-
-		write<Vector3>(dwClientState + offsets::dwClientState_ViewAngles, AimAngle);
-
-		dwOldPunchAngle.x = dwPunch.x * 2.f;
-		dwOldPunchAngle.y = dwPunch.y * 2.f;
-	}
-	else //If no recoil detected we null vOldAimPunch
-	{
-		dwOldPunchAngle = Vector3{ 0,0,0 };
+			if (totalPunch != 0.f) //Check for punch from our yaw and pitch
+			{
+				const Vector3 compensatedAngle = Vector3{ ((dwViewAngles.x + dwOldPunchAngle.x) - (dwPunch.x * 2.f)),((dwViewAngles.y + dwOldPunchAngle.y) - (dwPunch.y * 2.f)),0.f };
+				const Vector3 AimAngle = ClampAngle(compensatedAngle);
+				write<Vector3>(dwClientStatePtr + offsets::dwClientState_ViewAngles, AimAngle);
+				dwOldPunchAngle = Vector3{ dwPunch.x * 2.f, dwPunch.y * 2.f, 0.f };
+			}
+			else //If totalPunch Returns 0 (meaning no recoil) we set dwoldpunchangle back to null for next time.
+			{
+				dwOldPunchAngle = Vector3{ 0,0,0 };
+			}
+		}
 	}
 }
 

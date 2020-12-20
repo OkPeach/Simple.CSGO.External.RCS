@@ -207,7 +207,6 @@ namespace offsets
 
 namespace szStrings
 {
-	wchar_t szSteam[] = L"steam.exe";
 	wchar_t szCSGO[] = L"csgo.exe";
 	wchar_t szClientMod[] = L"client.dll";
 	wchar_t szEngineMod[] = L"engine.dll";
@@ -233,5 +232,5 @@ void write(DWORD address, TYPE dataToWrite) {
 	WriteProcessMemory(hProc, (LPVOID)address, &buffer, sizeof(buffer), 0);
 }
 
-
 static Vector3 dwOldPunchAngle;
+static uintptr_t dwClientStatePtr;
