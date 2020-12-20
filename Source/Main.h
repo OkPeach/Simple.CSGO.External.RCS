@@ -233,4 +233,3 @@ void write(DWORD address, TYPE dataToWrite) {
 }
 
 static Vector3 dwOldPunchAngle;
-static uintptr_t dwClientStatePtr;

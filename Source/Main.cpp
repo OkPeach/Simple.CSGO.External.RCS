@@ -1,7 +1,6 @@
 #include "Main.h"
-//Created by Supercraft360
-//https://www.unknowncheats.me/forum/members/570068.html
 //https://github.com/maniacTM
+//This is for learning purposes only.
 
 
 int main(void)
@@ -41,29 +40,29 @@ int main(void)
 inline void runRCS()
 {
 	//read client state to check we are in game and check playerstate to see if ur alive.
-	dwClientStatePtr = read<uintptr_t>(mEngine + offsets::dwClientState);
-	auto dwClientState_State = read<uintptr_t>(dwClientStatePtr + offsets::dwClientState_State);
+	const auto dwClientState_State = read<uintptr_t>(dwClientStatePtr + offsets::dwClientState_State);
+	const auto dwClientStatePtr = read<uintptr_t>(mEngine + offsets::dwClientState);
 
 	if (dwClientState_State == 6)
 	{
-		auto dwlocal = read<uintptr_t>(mClient + offsets::dwLocalPlayer);
+		const auto dwlocal = read<uintptr_t>(mClient + offsets::dwLocalPlayer);
 
 		if (dwlocal != 0)
 		{
-			auto dwPunch = read<Vector3>(dwlocal + offsets::m_aimPunchAngle);
-			auto dwViewAngles = read<Vector3>(dwClientStatePtr + offsets::dwClientState_ViewAngles);
+			const auto dwPunch = read<Vector3>(dwlocal + offsets::m_aimPunchAngle);
+			const auto dwViewAngles = read<Vector3>(dwClientStatePtr + offsets::dwClientState_ViewAngles);
 			const float totalPunch = dwPunch.x + dwPunch.y;
 
 			if (totalPunch != 0.f) //Check for punch from our yaw and pitch
 			{
-				const Vector3 compensatedAngle = Vector3{ ((dwViewAngles.x + dwOldPunchAngle.x) - (dwPunch.x * 2.f)),((dwViewAngles.y + dwOldPunchAngle.y) - (dwPunch.y * 2.f)),0.f };
-				const Vector3 AimAngle = ClampAngle(compensatedAngle);
+				const auto compensatedAngle = Vector3{ ((dwViewAngles.x + dwOldPunchAngle.x) - (dwPunch.x * 2.f)),((dwViewAngles.y + dwOldPunchAngle.y) - (dwPunch.y * 2.f)),0.f };
+				const auto AimAngle = ClampAngle(compensatedAngle);
 				write<Vector3>(dwClientStatePtr + offsets::dwClientState_ViewAngles, AimAngle);
 				dwOldPunchAngle = Vector3{ dwPunch.x * 2.f, dwPunch.y * 2.f, 0.f };
 			}
 			else //If totalPunch Returns 0 (meaning no recoil) we set dwoldpunchangle back to null for next time.
 			{
-				dwOldPunchAngle = Vector3{ 0,0,0 };
+				dwOldPunchAngle = Vector3{ 0.f,0.f,0.f };
 			}
 		}
 	}
